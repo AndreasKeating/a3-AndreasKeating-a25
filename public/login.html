@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Login</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- light weight CSS frmework -->
+  <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@2.0.6/css/pico.min.css">
+</head>
+<body>
+  <main class="container">
+    <h1>Sign in</h1>
+    <p>New here? We’ll create an account the first time you sign in.</p>
+    <form id="login-form">
+      <label>Username <input name="username" required></label>
+      <label>Password <input name="password" type="password" required></label>
+      <button type="submit">Sign in</button>
+    </form>
+    <p id="msg" role="status" aria-live="polite"></p>
+  </main>
+  <script>
+    const form = document.getElementById('login-form');
+    const msg  = document.getElementById('msg');
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const fd = new FormData(form);
+      const payload = { username: fd.get('username'), password: fd.get('password') };
+      const res = await fetch('/login', {
+        method: 'POST', headers: { 'Content-Type':'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const j = await res.json();
+      if (!res.ok) { msg.textContent = j.error || 'Login failed'; return; }
+      location.href = '/app';
+    });
+  </script>
+</body>
+</html>

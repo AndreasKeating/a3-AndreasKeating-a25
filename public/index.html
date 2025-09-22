@@ -1,0 +1,14 @@
+<body>
+  <form id="logout-form">
+    <button type="submit">Logout</button>
+  </form>
+
+  <script>
+    const lf = document.getElementById('logout-form');
+    if (lf) lf.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      await fetch('/logout', { method: 'POST' });
+      location.href = '/';
+    });
+  </script>
+</body>
