@@ -3,7 +3,90 @@
     <button type="submit">Logout</button>
   </form>
 
+  <h2>Add Entry</h2>
+  <form id="add-form">
+    <label>Model <input type="text"   name="model" required></label>
+    <label>Year  <input type="number" name="year"  required min="1886" step="1"></label>
+    <label>MPG   <input type="number" name="mpg"   required min="1"    step="1"></label>
+    <button type="submit">Add</button>
+  </form>
+
+  <h2>Update Entry</h2>
+  <form id="update-form">
+    <label>ID    <input type="text"   name="id"    required></label>
+    <label>Model <input type="text"   name="model"></label>
+    <label>Year  <input type="number" name="year"  min="1886" step="1"></label>
+    <label>MPG   <input type="number" name="mpg"   min="1"    step="1"></label>
+    <button type="submit">Update</button>
+    <p><small>Tip: leave a field blank to keep its current value.</small></p>
+  </form>
+
+  <h2>Delete Entry</h2>
+  <form id="delete-form">
+    <label>ID <input type="text" name="id" required></label>
+    <button type="submit">Delete</button>
+  </form>
+
+  <p><a href="results.html">View Results</a></p>
+
   <script>
+    // ----ADD ----
+    const addForm = document.getElementById('add-form');
+    if (addForm) addForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const fd = new FormData(addForm);
+      const payload = {
+        model: fd.get('model'),
+        year:  Number(fd.get('year')),
+        mpg:   Number(fd.get('mpg'))
+      };
+      const res = await fetch('/api/entries', {
+        method: 'POST',
+        headers: { 'Content-Type':'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) { alert('Add failed'); return; }
+      addForm.reset();
+      alert('Added!');
+    });
+
+    // ------UPDATE---
+    const updateForm = document.getElementById('update-form');
+    if (updateForm) updateForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const fd = new FormData(updateForm);
+      const id    = fd.get('id');
+      const model = fd.get('model') || null;
+      const year  = fd.get('year')  ? Number(fd.get('year')) : null;
+      const mpg   = fd.get('mpg')   ? Number(fd.get('mpg'))  : null;
+
+      const body = {};
+      if (model !== null) body.model = model;
+      if (year  !== null) body.year  = year;
+      if (mpg   !== null) body.mpg   = mpg;
+
+      const res = await fetch(`/api/entries/${encodeURIComponent(id)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type':'application/json' },
+        body: JSON.stringify(body)
+      });
+      if (!res.ok) { alert('Update failed'); return; }
+      updateForm.reset();
+      alert('Updated!');
+    });
+
+    // ---- DELETE ---
+    const delForm = document.getElementById('delete-form');
+    if (delForm) delForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const id = new FormData(delForm).get('id');
+      const res = await fetch(`/api/entries/${encodeURIComponent(id)}`, { method: 'DELETE' });
+      if (!res.ok) { alert('Delete failed'); return; }
+      delForm.reset();
+      alert('Deleted!');
+    });
+
+    // ---- LOGOUT ------
     const lf = document.getElementById('logout-form');
     if (lf) lf.addEventListener('submit', async (e) => {
       e.preventDefault();

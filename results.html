@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>Results (All Data)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@2.0.6/css/pico.min.css">
+</head>
+<body>
+    <header class="site-header">
+        <h1 id="results-title">Results (All Data)</h1>
+        <nav class="nav">
+            <a class="nav__link" href="index.html">Home</a>
+        </nav>
+    </header>
+
+    <section id="summary" class="card" aria-live="polite"></section>
+
+
+    <main class="card" style="margin:1rem;">
+        <div class="table-wrap">
+        <table id="results-table" class="table" aria-describedby="results-title">
+            <thead>
+            <tr>
+                <th>ID</th>
+                <th>Model</th>
+                <th>Year</th>
+                <th>MPG</th>
+                <th>Age</th>
+            </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+        </table>
+        </div>
+        <p id="status" class="msg" role="status" aria-live="polite"></p>
+    </main>
+
+    <script>
+        const tbody = document.getElementById("tbody");
+        const statusEl = document.getElementById("status");
+
+        function escapeHtml(str){
+        return String(str)
+            .replaceAll("&","&amp;").replaceAll("<","&lt;")
+            .replaceAll(">","&gt;").replaceAll('"',"&quot;")
+            .replaceAll("'","&#039;");
+        }
+
+        fetch("/api/entries")
+        .then(async res => {
+            if (!res.ok) throw new Error("Failed to load");
+            return res.json(); // array of rows
+        })
+        .then(rows => {
+            const count = rows.length;
+            const avgMpg = count
+                ? (rows.reduce((sum, r) => sum + Number(r.mpg || 0), 0) / count).toFixed(1)
+                : "0.0";
+            const summary = document.getElementById("summary");
+            if (summary) {
+                summary.innerHTML = `<strong>${count}</strong> cars • average MPG: <strong>${avgMpg}</strong>`;
+            }
+            
+            //<td>${r.id}</td>
+            tbody.innerHTML = rows.map(r => `
+                <tr>
+                <td>${r._id || r.id}</td>
+                <td>${escapeHtml(r.model)}</td>
+                <td>${r.year}</td>
+                <td>${r.mpg}</td>
+                <td>${r.age}</td>
+                </tr>
+            `).join("");
+
+            statusEl.textContent = `Loaded ${rows.length} item(s).`;
+        })
+        .catch(err => { statusEl.textContent = err.message; });
+    </script>
+</body>
+</html>

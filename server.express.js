@@ -26,10 +26,10 @@ async function start() { // connect first, then start server
     Entries = db.collection('entries');
     console.log('MongoDB connected');
 
-    start();
-    // app.listen(port, () => {
-    //   console.log(`Express server on http://localhost:${port}`);
-    // });
+    //start();
+    app.listen(port, () => {
+       console.log(`Express server on http://localhost:${port}`);
+    });
   } catch (err) {
     console.error('Mongo connect error:', err);
     process.exit(1);
