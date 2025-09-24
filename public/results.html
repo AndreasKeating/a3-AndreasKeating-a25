@@ -15,7 +15,7 @@
     <header class="site-header">
         <h1 id="results-title">Results (All Data)</h1>
         <nav class="nav">
-            <a class="nav__link" href="index.html">Home</a>
+            <a class="nav__link" href="/app">Home</a>
         </nav>
     </header>
 
@@ -45,18 +45,28 @@
         const statusEl = document.getElementById("status");
 
         function escapeHtml(str){
-        return String(str)
+            return String(str)
             .replaceAll("&","&amp;").replaceAll("<","&lt;")
             .replaceAll(">","&gt;").replaceAll('"',"&quot;")
             .replaceAll("'","&#039;");
         }
+        
+        //fetch("/api/entries")
+        // .then(async res => {
+        //     if (!res.ok) throw new Error("Failed to load");
+        //     return res.json(); // the array of rows
+        // })
 
         fetch("/api/entries")
-        .then(async res => {
-            if (!res.ok) throw new Error("Failed to load");
-            return res.json(); // array of rows
-        })
-        .then(rows => {
+            .then(async (res) => {
+            const ct = res.headers.get("content-type") || "";
+            if (!ct.includes("application/json")) {
+                await res.text(); // consume HTML for clearer errors
+                throw new Error("Not logged in (server returned HTML instead of JSON).");
+            }
+            return res.json(); // <-- convert to rows array
+            })
+            .then((rows) => {
             const count = rows.length;
             const avgMpg = count
                 ? (rows.reduce((sum, r) => sum + Number(r.mpg || 0), 0) / count).toFixed(1)
@@ -65,8 +75,8 @@
             if (summary) {
                 summary.innerHTML = `<strong>${count}</strong> cars • average MPG: <strong>${avgMpg}</strong>`;
             }
-            
-            //<td>${r.id}</td>
+
+            // //<td>${r.id}</td>
             tbody.innerHTML = rows.map(r => `
                 <tr>
                 <td>${r._id || r.id}</td>
@@ -78,8 +88,8 @@
             `).join("");
 
             statusEl.textContent = `Loaded ${rows.length} item(s).`;
-        })
-        .catch(err => { statusEl.textContent = err.message; });
+            })
+            .catch(err => { statusEl.textContent = err.message; });
     </script>
 </body>
 </html>
