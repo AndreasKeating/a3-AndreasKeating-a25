@@ -13,7 +13,11 @@ const port = process.env.PORT || 3000;
 app.use(express.json());
 app.use(cookieParser(process.env.COOKIE_SECRET || 'dev-secret'));
 app.use('/results.html', requireUser); //to make sure user is loged in first befopre opening results pg
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'public'), {
+  maxAge: '1d',
+  etag: true
+}));
+
 
 // ---- db -----
 let db, Users, Entries;

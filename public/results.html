@@ -12,8 +12,18 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
 
     <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@2.0.6/css/pico.min.css">
+    <style>
+        .skip-link{position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden}
+        .skip-link:focus{left:1rem;top:1rem;width:auto;height:auto;background:#111;color:#fff;padding:.5rem .75rem;border-radius:.4rem}
+        :focus-visible{outline:2px solid currentColor;outline-offset:2px}
+        .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+    </style>
 </head>
+
+
+
 <body>
+    <a href="#main" class="skip-link">Skip to main content</a>
     <header class="site-header">
         <h1 id="results-title">Results (All Data)</h1>
         <nav class="nav">
@@ -21,30 +31,42 @@
         </nav>
     </header>
 
+    <section class="card" style="margin:1rem; display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
+        <input id="q" type="search" placeholder="Filter by model/year/mpg…" aria-label="Filter rows">
+        <button id="download-json" type="button">Download JSON</button>
+        <button id="download-csv"  type="button">Download CSV</button>
+    </section>
+
+
     <section id="summary" class="card" aria-live="polite"></section>
 
-
-    <main class="card" style="margin:1rem;">
-        <div class="table-wrap">
+    <main id="main" class="card" style="margin:1rem;" tabindex="-1">
+    <div class="table-wrap">
         <table id="results-table" class="table" aria-describedby="results-title">
-            <thead>
+        <caption class="sr-only">All saved cars with model, year, MPG, and computed age</caption>
+        <thead>
             <tr>
-                <th>ID</th>
-                <th>Model</th>
-                <th>Year</th>
-                <th>MPG</th>
-                <th>Age</th>
+            <th scope="col">ID</th>
+            <th scope="col">Model</th>
+            <th scope="col">Year</th>
+            <th scope="col">MPG</th>
+            <th scope="col">Age</th>
             </tr>
-            </thead>
-            <tbody id="tbody"></tbody>
+        </thead>
+        <tbody id="tbody"></tbody>
         </table>
-        </div>
-        <p id="status" class="msg" role="status" aria-live="polite"></p>
+    </div>
+    <p id="status" class="msg" role="status" aria-live="polite"></p>
     </main>
 
+
     <script>
-        const tbody = document.getElementById("tbody");
-        const statusEl = document.getElementById("status");
+        const tbody     = document.getElementById("tbody");
+        const statusEl  = document.getElementById("status");
+        const qInput    = document.getElementById("q");
+        const btnJSON   = document.getElementById("download-json");
+        const btnCSV    = document.getElementById("download-csv");
+        const ths       = Array.from(document.querySelectorAll("#results-table thead th"));
 
         function escapeHtml(str){
             return String(str)
@@ -52,46 +74,123 @@
             .replaceAll(">","&gt;").replaceAll('"',"&quot;")
             .replaceAll("'","&#039;");
         }
-        
-        //fetch("/api/entries")
-        // .then(async res => {
-        //     if (!res.ok) throw new Error("Failed to load");
-        //     return res.json(); // the array of rows
-        // })
 
-        fetch("/api/entries")
-            .then(async (res) => {
-            const ct = res.headers.get("content-type") || "";
-            if (!ct.includes("application/json")) {
-                await res.text(); // consume HTML for clearer errors
-                throw new Error("Not logged in (server returned HTML instead of JSON).");
+        // ---- page state ----
+        let allRows = [];
+        let sortKey = null;          // '_id' | 'model' | 'year' | 'mpg' | 'age'
+        let sortDir = 1;             // 1 asc, -1 desc
+
+        function keyFromIndex(i){
+            // Header order: ID, Model, Year, MPG, Age
+            return ['_id','model','year','mpg','age'][i] || '_id';
+        }
+
+        function render(){
+            // filter
+            const q = (qInput?.value || '').trim().toLowerCase();
+            let rows = allRows.filter(r => {
+            if (!q) return true;
+            return (
+                String(r._id || r.id).toLowerCase().includes(q) ||
+                String(r.model).toLowerCase().includes(q) ||
+                String(r.year).includes(q) ||
+                String(r.mpg).includes(q)
+            );
+            });
+
+            // sort
+            if (sortKey){
+            rows = rows.slice().sort((a,b) => {
+                const av = a[sortKey], bv = b[sortKey];
+                const an = typeof av === 'number', bn = typeof bv === 'number';
+                if (an && bn) return (av - bv) * sortDir;
+                return String(av).localeCompare(String(bv)) * sortDir;
+            });
             }
-            return res.json(); 
-            })
-            .then((rows) => {
+
+            // summary (filtered view)
             const count = rows.length;
-            const avgMpg = count
-                ? (rows.reduce((sum, r) => sum + Number(r.mpg || 0), 0) / count).toFixed(1)
-                : "0.0";
+            const avgMpg = count ? (rows.reduce((s, r) => s + Number(r.mpg || 0), 0) / count).toFixed(1) : "0.0";
             const summary = document.getElementById("summary");
-            if (summary) {
-                summary.innerHTML = `<strong>${count}</strong> cars • average MPG: <strong>${avgMpg}</strong>`;
-            }
+            if (summary) summary.innerHTML = `<strong>${count}</strong> cars • average MPG: <strong>${avgMpg}</strong>`;
 
-            // //<td>${r.id}</td>
+            // table
             tbody.innerHTML = rows.map(r => `
-                <tr>
-                <td>${r._id || r.id}</td>
+            <tr>
+                <td class="cell-id" style="cursor:copy" title="Click to copy ID">${escapeHtml(String(r._id || r.id))}</td>
                 <td>${escapeHtml(r.model)}</td>
                 <td>${r.year}</td>
                 <td>${r.mpg}</td>
                 <td>${r.age}</td>
-                </tr>
+            </tr>
             `).join("");
 
-            statusEl.textContent = `Loaded ${rows.length} item(s).`;
+            statusEl.textContent = `Loaded ${allRows.length} item(s). Showing ${rows.length}.`;
+        }
+
+        // click headers → sort toggle
+        ths.forEach((th, i) => {
+            th.style.cursor = 'pointer';
+            th.title = 'Click to sort';
+            th.addEventListener('click', () => {
+            const key = keyFromIndex(i);
+            if (sortKey === key) sortDir *= -1;
+            else { sortKey = key; sortDir = 1; }
+            render();
+            });
+        });
+
+        // live filter
+        if (qInput) qInput.addEventListener('input', render);
+
+        // downloads
+        function downloadBlob(filename, type, text){
+            const blob = new Blob([text], { type });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 0);
+        }
+        btnJSON?.addEventListener('click', () => {
+            downloadBlob('entries.json', 'application/json', JSON.stringify(allRows, null, 2));
+        });
+        btnCSV?.addEventListener('click', () => {
+            const header = ['_id','model','year','mpg','age'];
+            const esc = v => `"${String(v).replaceAll('"','""')}"`; 
+            const lines = [header.join(',')].concat(
+            allRows.map(r => [r._id || r.id, r.model, r.year, r.mpg, r.age].map(esc).join(','))
+            );
+            downloadBlob('entries.csv', 'text/csv', lines.join('\n'));
+        });
+
+        // bclick  ID cell to copy it
+        tbody.addEventListener('click', async (e) => {
+            const td = e.target.closest('.cell-id');
+            if (!td) return;
+            const idText = (td.textContent || '').trim();
+            try {
+            await navigator.clipboard.writeText(idText);
+            statusEl.textContent = `Copied ID: ${idText}`;
+            } catch {
+            statusEl.textContent = `Select and copy: ${idText}`;
+            }
+        });
+
+        // fetchs data 
+        fetch("/api/entries")
+            .then(async (res) => {
+            const ct = res.headers.get("content-type") || "";
+            if (!ct.includes("application/json")) {
+                await res.text();
+                throw new Error("Not logged in (server returned HTML instead of JSON).");
+            }
+            return res.json();
             })
+            .then((rows) => { allRows = rows; render(); })
             .catch(err => { statusEl.textContent = err.message; });
     </script>
+
 </body>
 </html>

@@ -8,16 +8,31 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@2.0.6/css/pico.min.css">
+  <style>
+    /* skip link + visible focus */
+    .skip-link{position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden}
+    .skip-link:focus{left:1rem;top:1rem;width:auto;height:auto;background:#111;color:#fff;padding:.5rem .75rem;border-radius:.4rem}
+    :focus-visible{outline:2px solid currentColor;outline-offset:2px}
+  </style>
 </head>
+
+
 <body>
-  <main class="container">
+  <a href="#main" class="skip-link">Skip to main content</a>
+  <main id="main" class="container" tabindex="-1">
     <h1>Sign in</h1>
     <p>New here? We’ll create an account the first time you sign in.</p>
-    <form id="login-form">
-      <label>Username <input name="username" autocomplete="username" required></label>
-      <label>Password <input name="password" type="password" autocomplete="current-password" required></label>
+    <form id="login-form" novalidate>
+      <label for="username">Username</label>
+      <input id="username" name="username" autocomplete="username" required>
+
+      <label for="password">Password</label>
+      <input id="password" name="password" type="password" autocomplete="current-password" required aria-describedby="pw-help">
+      <small id="pw-help">At least 6 characters.</small>
+
       <button type="submit">Sign in</button>
     </form>
+
     <p id="msg" role="status" aria-live="polite"></p>
   </main>
   <script>
