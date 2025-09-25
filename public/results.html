@@ -3,6 +3,8 @@
 <head>
     <meta charset="utf-8" />
     <title>Results (All Data)</title>
+    <meta name="description" content="Results table showing all of your saved cars with model, year, MPG, and computed age.">
+
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -64,7 +66,7 @@
                 await res.text(); // consume HTML for clearer errors
                 throw new Error("Not logged in (server returned HTML instead of JSON).");
             }
-            return res.json(); // <-- convert to rows array
+            return res.json(); 
             })
             .then((rows) => {
             const count = rows.length;

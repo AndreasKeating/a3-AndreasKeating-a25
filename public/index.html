@@ -1,8 +1,17 @@
+<!doctype html>
+<html lang="en">
+
 <head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Car Entries — App</title>
+  <meta name="description" content="Add, update and delete your car entries; view results for your account.">
   <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@2.0.6/css/pico.min.css">
 </head>
 
+
 <body>
+  <h1>Car Entries</h1>
   <form id="logout-form">
     <button type="submit">Logout</button>
   </form>
@@ -49,9 +58,12 @@
         headers: { 'Content-Type':'application/json' },
         body: JSON.stringify(payload)
       });
-      if (!res.ok) { alert('Add failed'); return; }
+
+      // if (!res.ok) { 
+      //   alert('Add failed'); return; 
+      // }
       addForm.reset();
-      alert('Added!');
+      //alert('Added!');
     });
 
     // ------UPDATE---
@@ -59,7 +71,7 @@
     if (updateForm) updateForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       const fd = new FormData(updateForm);
-      const id    = fd.get('id');
+      const id    = (fd.get('id') || '').trim();
       const model = fd.get('model') || null;
       const year  = fd.get('year')  ? Number(fd.get('year')) : null;
       const mpg   = fd.get('mpg')   ? Number(fd.get('mpg'))  : null;
@@ -74,10 +86,15 @@
         headers: { 'Content-Type':'application/json' },
         body: JSON.stringify(body)
       });
-      if (!res.ok) { alert('Update failed'); return; }
-      updateForm.reset();
-      alert('Updated!');
-    });
+
+      // if (!res.ok) {
+      // const msg = await res.text();
+      // alert(`Update failed (${res.status}): ${msg}`);
+      // return;
+      // }
+    updateForm.reset();
+    //alert('Updated!');
+  });
 
     // ---- DELETE ---
     const delForm = document.getElementById('delete-form');
@@ -85,9 +102,12 @@
       e.preventDefault();
       const id = new FormData(delForm).get('id');
       const res = await fetch(`/api/entries/${encodeURIComponent(id)}`, { method: 'DELETE' });
-      if (!res.ok) { alert('Delete failed'); return; }
+
+      // if (!res.ok) { 
+      //   alert('Delete failed'); return; 
+      // }
       delForm.reset();
-      alert('Deleted!');
+      //alert('Deleted!');
     });
 
     // ---- LOGOUT ------
@@ -99,3 +119,4 @@
     });
   </script>
 </body>
+</html>

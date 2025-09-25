@@ -94,9 +94,9 @@ app.get('/results.html', requireUser, (req, res) => {
 
 // ---- API (user-scoped ) --------------
 //chekc data of already signed in user
-app.get('/api/entries', requireUser, async (req, res) => { 
+app.get('/api/entries', requireUser, async (req, res) => {
   const rows = await Entries.find({ user: req.user }).toArray();
-  res.json(rows.map(withDerived));
+  res.json(rows.map(r => withDerived({ ...r, _id: String(r._id) })));
 });
 
 app.post('/api/entries', requireUser, async (req, res) => {
@@ -111,24 +111,40 @@ app.post('/api/entries', requireUser, async (req, res) => {
 
 app.put('/api/entries/:id', requireUser, async (req, res) => {
   const { id } = req.params;
-  const { model, year, mpg } = req.body || {};
-  const filter = { _id: new ObjectId(id), user: req.user };
-  const update = { $set: {} };
-  if (model != null) update.$set.model = String(model);
-  if (year  != null) update.$set.year  = +year;
-  if (mpg   != null) update.$set.mpg   = +mpg;
 
-  const r = await Entries.findOneAndUpdate(filter, update, { returnDocument: 'after' });
+  if (!ObjectId.isValid(id)) return res.status(400).json({ error: 'bad id' });
+
+  const { model, year, mpg } = req.body || {};
+  const $set = {};
+  if (model != null && model !== '') $set.model = String(model);
+  if (year  != null && year  !== '') $set.year  = +year;
+  if (mpg   != null && mpg   !== '') $set.mpg   = +mpg;
+
+  if (Object.keys($set).length === 0) {
+    return res.status(400).json({ error: 'no fields to update' });
+  }
+
+  const r = await Entries.findOneAndUpdate(
+    { _id: new ObjectId(id), user: req.user },
+    { $set },
+    { returnDocument: 'after' }
+  );
+
   if (!r.value) return res.status(404).json({ error: 'not found' });
-  res.json(withDerived(r.value));
+  res.json(withDerived({ ...r.value, _id: String(r.value._id) }));
 });
+
 
 app.delete('/api/entries/:id', requireUser, async (req, res) => {
   const { id } = req.params;
+
+  if (!ObjectId.isValid(id)) return res.status(400).json({ error: 'bad id' });
+
   const r = await Entries.findOneAndDelete({ _id: new ObjectId(id), user: req.user });
   if (!r.value) return res.status(404).json({ error: 'not found' });
-  res.json(withDerived(r.value));
+  res.json(withDerived({ ...r.value, _id: String(r.value._id) }));
 });
+
 
 //start();
 // app.listen(port, () => {

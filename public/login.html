@@ -3,8 +3,10 @@
 <head>
   <meta charset="utf-8" />
   <title>Login</title>
+  <meta name="description" content="Sign in (or create an account on first sign in) to manage your entries.">
+
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <!-- light weight CSS frmework -->
+
   <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@2.0.6/css/pico.min.css">
 </head>
 <body>
@@ -12,8 +14,8 @@
     <h1>Sign in</h1>
     <p>New here? We’ll create an account the first time you sign in.</p>
     <form id="login-form">
-      <label>Username <input name="username" required></label>
-      <label>Password <input name="password" type="password" required></label>
+      <label>Username <input name="username" autocomplete="username" required></label>
+      <label>Password <input name="password" type="password" autocomplete="current-password" required></label>
       <button type="submit">Sign in</button>
     </form>
     <p id="msg" role="status" aria-live="polite"></p>
